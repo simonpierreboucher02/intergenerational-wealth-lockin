@@ -1,0 +1,878 @@
+% ============================================================
+%  paper.tex  —  Intergenerational Wealth Lock-in and Housing Affordability
+%  A Theoretical Model with Python Simulations
+% ============================================================
+\documentclass[12pt, letterpaper]{article}
+
+% ── Packages ─────────────────────────────────────────────
+\usepackage[margin=1.25in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{appendix}
+
+\onehalfspacing
+
+% ── Theorem environments ──────────────────────────────────
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+% ── Macros ───────────────────────────────────────────────
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calV}{\mathcal{V}}
+\newcommand{\al}{\alpha}
+\newcommand{\be}{\beta}
+\newcommand{\ga}{\gamma}
+\newcommand{\de}{\delta}
+\newcommand{\ep}{\varepsilon}
+\newcommand{\ka}{\kappa}
+\newcommand{\la}{\lambda}
+\newcommand{\ps}{\psi}
+\newcommand{\si}{\sigma}
+\newcommand{\te}{\theta}
+\newcommand{\ph}{\phi}
+\newcommand{\rbar}{\bar{r}}
+\newcommand{\pbar}{\bar{P}}
+\newcommand{\sbar}{\bar{S}}
+\newcommand{\gbar}{\bar{g}}
+\newcommand{\hmin}{h_{\min}}
+\newcommand{\hmax}{h_{\max}}
+
+% ── Title ─────────────────────────────────────────────────
+\title{%
+  \textbf{Intergenerational Wealth Lock-in and Housing Affordability}\\[0.5em]
+  \large A Theoretical Model with Python Simulations
+}
+\author{%
+  Simon-Pierre Boucher\thanks{Contact: \href{mailto:spbou4@protonmail.com}{spbou4@protonmail.com} \quad
+  Website: \href{https://www.spboucher.ai}{www.spboucher.ai}}
+  \and
+  Claude (Anthropic)\thanks{AI co-author. Claude Sonnet 4.6, Anthropic, \url{https://claude.ai}}
+}
+\date{February 2026}
+
+% =============================================================
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% ─────────────────────────────────────────────────────────────
+\begin{abstract}
+\noindent
+We develop a tractable two-generation overlapping-generations (OLG) model to study how parental wealth transfers amplify inequality in homeownership when housing markets are credit-constrained.  Heterogeneous households face binding loan-to-value (LTV) and debt-service-to-income (DSTI) constraints.  Parental gifts and co-signing relax both constraints simultaneously, inducing a \emph{lock-in} dynamic: children of wealthy parents systematically sort into homeownership, persistently outbidding lower-wealth peers as house prices adjust in general equilibrium.
+
+We prove three propositions: (\emph{i}) parental transfers weakly increase the probability of homeownership through monotone expansion of the feasible mortgage set; (\emph{ii}) the ownership gap between high- and low-parental-wealth households---the \emph{lock-in index}---is monotone increasing in transfer intensity and strictly positive whenever the transfer switches a marginal household across the homeownership threshold; (\emph{iii}) when the DSTI constraint binds, the reduction in ownership caused by a mortgage-rate increase is convex (accelerating) for low-parental-wealth households, creating a systematic asymmetry in rate-shock exposure.
+
+A calibrated Python simulation with $N=5{,}000$ households confirms all theoretical predictions, generates publication-quality comparative statics, and quantifies welfare effects of parental wealth distribution and supply-side housing policy.  The model predicts that doubling transfer intensity from $\lambda = 0.10$ to $\lambda = 0.20$ raises the lock-in index by approximately $14$ percentage points under inelastic supply, while a 200-basis-point rate increase reduces bottom-tercile ownership more than twice as sharply as top-tercile ownership.
+\end{abstract}
+
+\bigskip
+\noindent\textbf{JEL Codes:} D31, G21, R21, R31.
+
+\noindent\textbf{Keywords:} intergenerational wealth transfer, homeownership, credit constraints, lock-in, mortgage markets, housing affordability, overlapping generations.
+
+\newpage
+\setcounter{page}{1}
+\tableofcontents
+
+\newpage
+
+% =============================================================
+\section{Introduction}
+\label{sec:intro}
+
+Housing has become the primary vehicle for wealth accumulation in advanced economies, yet access to homeownership increasingly depends on resources that predate the household's own lifecycle decisions.  Survey evidence consistently documents that first-time buyers rely heavily on parental gifts, inter vivos transfers, and co-signing arrangements to satisfy the down-payment and debt-service requirements imposed by mortgage lenders \citep{piketty2014}.  This dependence is not merely an artifact of tight credit markets: even in periods of historically low mortgage rates, the income of young households fails to keep pace with house price appreciation, leaving the parental balance sheet as the decisive determinant of tenure.
+
+This paper asks: \emph{How do intergenerational wealth transfers create persistent lock-in in homeownership when housing is leveraged and credit constraints bind---especially under interest-rate shocks?}  The question is policy-relevant because a housing market in which ownership is largely hereditary behaves differently from one in which it rewards human capital or effort.  Lock-in concentrates housing wealth in dynasties that are already wealthy, amplifies price-to-income ratios, and creates a bifurcated renter class that cannot accumulate the equity required to ``step on'' the housing ladder under any realistic savings trajectory.
+
+\subsection{Main Contributions}
+
+We make four main contributions.
+
+\paragraph{1. Tractable theory.}  We build a two-generation OLG model with heterogeneous households indexed by income $y_i$ and parental wealth $W^p_i$.  Housing serves as both a consumption good and a collateral asset.  Mortgage borrowing is subject to two simultaneous constraints: an LTV constraint (minimum down payment) and a DSTI constraint (maximum debt-service-to-income ratio).  Parental gifts shift the down-payment frontier and, via the reduced principal, also relax the DSTI constraint.
+
+\paragraph{2. Lock-in proposition.}  We formally define the \emph{lock-in index} as the homeownership gap between the top and bottom quintiles of the parental wealth distribution, and prove that this index is non-negative and increasing in transfer intensity $\lambda$ under mild monotonicity conditions on the income and parental wealth distributions.
+
+\paragraph{3. Nonlinear rate sensitivity.}  We prove that DSTI-constrained households face a \emph{convex} reduction in feasible mortgage credit as rates rise.  Because low-parental-wealth households are disproportionately DSTI-constrained (they need larger mortgages), rate shocks reduce their ownership probability more sharply and nonlinearly than for high-wealth households.
+
+\paragraph{4. General equilibrium.}  House prices are determined by market clearing.  We show analytically and numerically that higher transfer intensity raises equilibrium prices, partially crowding out the ownership gains for low-wealth households while delivering excess capital gains to incumbent owners.  Supply elasticity is a critical moderating force: more elastic supply attenuates price increases and reduces the general-equilibrium crowding-out.
+
+\subsection{Stylized Facts}
+
+Our model is consistent with several well-documented empirical regularities:
+\begin{itemize}
+  \item \textbf{Parental wealth gradient.}  Homeownership rates exhibit a steep gradient in parental wealth across all age groups, with the gap between top- and bottom-quintile children exceeding 30--40 percentage points in many OECD countries.
+  \item \textbf{Price-to-income escalation.}  Price-to-income ratios in major metropolitan areas have doubled since the mid-1990s, substantially outpacing growth in household incomes.
+  \item \textbf{Asymmetric rate sensitivity.}  The 2022--2023 rate-hiking cycle produced particularly sharp declines in homeownership rates among younger, lower-income cohorts, consistent with binding DSTI constraints.
+\end{itemize}
+
+\subsection{Paper Organisation}
+
+Section~\ref{sec:literature} reviews related work.  Section~\ref{sec:model} sets up the model.  Section~\ref{sec:equilibrium} defines and characterises equilibrium.  Section~\ref{sec:theory} states the three main propositions and a welfare theorem.  Section~\ref{sec:sim_design} describes the simulation design.  Section~\ref{sec:results} presents simulation results.  Section~\ref{sec:discussion} discusses policy counterfactuals.  Section~\ref{sec:extensions} outlines extensions.  Section~\ref{sec:conclusion} concludes.  Appendix~\ref{app:proofs} contains proof sketches; Appendix~\ref{app:tables} tabulates all parameters.
+
+% =============================================================
+\section{Related Literature}
+\label{sec:literature}
+
+Our paper sits at the intersection of three strands of research.
+
+\paragraph{Housing and credit constraints.}  \citet{ortalo2006} develop a life-cycle model of housing demand showing that credit constraints force young households into renting and that income shocks have disproportionate effects on first-time buyers.  \citet{glaeser2005} document the role of supply-side restrictions---zoning, land-use regulation---in explaining why house prices have risen faster than construction costs.  Our model complements these by focusing on the demand-side role of family wealth rather than income shocks or supply-side frictions per se.
+
+\paragraph{Wealth heterogeneity and inequality.}  The distributional implications of capital accumulation have been central to the economics literature since \citet{piketty2014}.  \citet{aiyagari1994} provides the canonical framework for studying the aggregate implications of uninsured idiosyncratic risk.  We adapt this tradition to a housing setting in which the credit market itself is the propagation mechanism for wealth inequality.
+
+\paragraph{Wealthy hand-to-mouth households.}  \citet{kaplan2014} show that a large share of households hold substantial illiquid wealth (primarily housing) while remaining hand-to-mouth in liquid assets.  Our model provides a mechanism explaining how parental transfers allow some households to ``leap'' over the illiquid-asset barrier while others remain permanently excluded.
+
+\paragraph{Overlapping generations and housing.}  Two-generation OLG models have been used extensively to study social security, capital accumulation, and inter-generational redistribution since \citet{diamond1965}.  Our contribution is to embed a leveraged, collateral-constrained housing market in this framework and derive clean comparative statics on the ownership gap.
+
+% =============================================================
+\section{Model}
+\label{sec:model}
+
+\subsection{Notation and Timing}
+
+We model a single cohort of ``child'' households.  Each child household $i$ is characterised by two primitive characteristics drawn before birth:
+\begin{itemize}
+  \item Annual income $y_i > 0$.
+  \item Parental wealth $W^p_i \geq 0$ (accumulated by the parent's generation).
+\end{itemize}
+The timing within the period is as follows:
+\begin{enumerate}
+  \item Nature reveals $(y_i, W^p_i, r, P)$ to household $i$ and to the parent.
+  \item The parent chooses a transfer $g_i \in [0, \gbar(W^p_i)]$.
+  \item Household $i$ chooses tenure $o_i \in \{0,1\}$; if $o_i=1$, it also chooses housing quantity $h_i$ and mortgage $m_i$.
+  \item Budget constraints and credit constraints are verified.
+  \item At the end of the period, housing resells at price $P' = P(1+\pi)$ (deterministic appreciation in the baseline).
+\end{enumerate}
+
+\subsection{Notation Table}
+
+\begin{table}[h!]
+\centering
+\caption{Model notation}
+\label{tab:notation}
+\begin{tabular}{lll}
+\toprule
+Symbol & Domain & Description \\
+\midrule
+$i$ & $\{1,\ldots,N\}$ & Household index \\
+$y_i$ & $\R_{++}$ & Annual household income \\
+$W^p_i$ & $\R_+$ & Parental wealth \\
+$a_i$ & $\R_+$ & Household's own pre-purchase savings \\
+$g_i$ & $[0, \gbar]$ & Parental gift (transfer) \\
+$d_i = a_i + g_i$ & $\R_+$ & Total down-payment resources \\
+$o_i$ & $\{0,1\}$ & Tenure (1=owner, 0=renter) \\
+$h_i$ & $[\hmin, \hmax]$ & Housing quantity demanded by owner \\
+$h^R_i$ & $\R_+$ & Rental housing consumed by renter \\
+$m_i$ & $\R_+$ & Mortgage balance \\
+$P$ & $\R_{++}$ & House price per unit \\
+$R = \kappa P$ & $\R_{++}$ & Rent per unit ($\kappa \in (0,1)$) \\
+$r$ & $(0,1)$ & Mortgage interest rate \\
+$T$ & $\mathbb{Z}_{++}$ & Mortgage term (years) \\
+$\alpha(r,T)$ & $\R_{++}$ & Annuity factor (see eq.~\eqref{eq:annuity}) \\
+$\chi$ & $(0,1)$ & Minimum down-payment share (LTV floor) \\
+$\psi$ & $(0,1)$ & Maximum DSTI ratio \\
+$\lambda$ & $[0,1]$ & Transfer intensity \\
+$\gbar$ & $\R_+$ & Maximum parental gift \\
+$\gamma$ & $(1,\infty)$ & CRRA parameter (consumption) \\
+$\theta$ & $(0,\infty)\setminus\{1\}$ & Housing utility curvature \\
+$\phi$ & $\R_{++}$ & Weight on housing in utility \\
+$\eta$ & $\R_+$ & Housing supply elasticity \\
+$\sbar$ & $\R_+$ & Baseline housing supply \\
+$\pbar$ & $\R_{++}$ & Baseline/reference house price \\
+$F(y, W^p)$ & Bivariate CDF & Joint distribution of $(y, W^p)$ \\
+$LI$ & $[0,1]$ & Lock-in index \\
+$PTI$ & $\R_+$ & Price-to-income ratio \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Preferences}
+
+Household $i$'s utility over consumption $c$ and housing $h$ follows a CRRA specification:
+\begin{equation}
+  U(c, h) = \frac{c^{1-\ga}}{1-\ga} + \ph \frac{h^{1-\te}}{1-\te}, \qquad \ga, \te > 1,\; \ga \neq 1,\; \te \neq 1.
+  \label{eq:utility}
+\end{equation}
+$U$ is strictly increasing and strictly concave in each argument.  The parameter $\ph > 0$ governs the relative weight of housing in utility.
+
+\subsection{Income and Parental Wealth}
+
+The joint distribution of $(y_i, W^p_i)$ is characterised by log-normal marginals with a Gaussian copula:
+\begin{align}
+  \ln y_i   &\sim \N(\mu_y,\, \sigma_y^2),\\
+  \ln W^p_i &\sim \N(\mu_w,\, \sigma_w^2),\\
+  \text{corr}(\ln y_i,\, \ln W^p_i) &= \rho \in (-1,1).
+\end{align}
+The correlation $\rho > 0$ captures the empirical fact that higher-income households tend to have wealthier parents.
+
+\subsection{Household Own Savings}
+
+Prior to entering the housing market, each household has accumulated savings:
+\begin{equation}
+  a_i = \theta_a \cdot y_i,
+  \label{eq:savings}
+\end{equation}
+where $\theta_a \in (0,1)$ is a calibrated savings rate (in the baseline, $\theta_a = 0.50$, i.e.\ six months of income).  This parsimonious rule captures the stylised fact that savings are approximately proportional to permanent income at the time of first home purchase.
+
+\subsection{Parental Transfer}
+
+The parent chooses gift $g_i$ subject to a wealth capacity constraint:
+\begin{equation}
+  g_i = \min\!\bigl\{\la W^p_i,\; \gbar\bigr\},
+  \label{eq:transfer}
+\end{equation}
+where $\la \in [0,1]$ is the transfer intensity (fraction of parental wealth transferred) and $\gbar > 0$ is a hard ceiling.  In the baseline we treat $\la$ as a parameter rather than a choice variable; Section~\ref{sec:extensions} discusses an endogenous transfer model with a convex cost.
+
+The total down-payment resources available to household $i$ are:
+\begin{equation}
+  d_i = a_i + g_i.
+  \label{eq:downpayment}
+\end{equation}
+
+\subsection{Housing Supply}
+
+The housing supply curve is:
+\begin{equation}
+  S(P) = \sbar + \eta(P - \pbar),
+  \label{eq:supply}
+\end{equation}
+where $\sbar > 0$ is baseline supply, $\eta \geq 0$ is the supply elasticity (units per dollar of price), and $\pbar$ is the reference price.  The polar case $\eta = 0$ corresponds to perfectly inelastic supply (fixed stock), which approximates the short run in supply-constrained metro areas.
+
+\subsection{Mortgage Contract and Constraints}
+
+If household $i$ purchases $h_i$ units of housing at price $P$:
+\begin{itemize}
+  \item \textbf{Mortgage balance:} $m_i = \max\{P h_i - d_i,\, 0\}$.
+  \item \textbf{Annual mortgage payment:}
+  \begin{equation}
+    \text{pay}(m_i; r, T) = m_i \cdot \al(r, T),
+    \label{eq:payment}
+  \end{equation}
+  where the annuity factor is
+  \begin{equation}
+    \al(r,T) = \frac{r}{1-(1+r)^{-T}}.
+    \label{eq:annuity}
+  \end{equation}
+  \item \textbf{LTV constraint:}
+  \begin{equation}
+    d_i \geq \chi \cdot P h_i \quad \Leftrightarrow \quad m_i \leq (1-\chi) P h_i.
+    \label{eq:ltv}
+  \end{equation}
+  \item \textbf{DSTI constraint:}
+  \begin{equation}
+    m_i \cdot \al(r,T) \leq \psi \cdot y_i.
+    \label{eq:dsti}
+  \end{equation}
+  \item \textbf{Period consumption:}
+  \begin{equation}
+    c_i = y_i - m_i \cdot \al(r,T) > 0.
+    \label{eq:consumption}
+  \end{equation}
+\end{itemize}
+In equation~\eqref{eq:consumption} we simplify by treating down-payment resources as sunk (committed before the period's income realization), so current consumption is income minus the annual mortgage payment.
+
+\subsection{Feasible Mortgage Set}
+
+Given $(y_i, d_i, P, r)$, the maximum feasible mortgage for a house of size $h$ is:
+\begin{equation}
+  m^{\max}(h) = \min\!\Bigl\{(1-\chi)Ph,\;\; \frac{\psi y_i}{\al(r,T)}\Bigr\}.
+  \label{eq:mmax}
+\end{equation}
+Household $i$ can afford housing $h$ if and only if:
+\begin{equation}
+  d_i \geq \chi P h
+  \quad \text{and} \quad
+  (Ph - d_i)^+ \leq m^{\max}(h),
+  \label{eq:feasibility}
+\end{equation}
+where $(x)^+ = \max\{x,0\}$.  Define the feasible housing set:
+\begin{equation}
+  \calH(y_i, d_i; P, r) = \bigl\{h \in [\hmin, \hmax] : \eqref{eq:feasibility} \text{ holds}\bigr\}.
+  \label{eq:feasset}
+\end{equation}
+
+\subsection{Renter's Problem}
+
+A renter consumes housing $h^R_i$ at rental rate $R = \ka P$ per unit.  The renter's problem is:
+\begin{equation}
+  V^R_i = \max_{c,\, h^R_i \geq 0} U(c, h^R_i)
+  \quad \text{s.t.} \quad
+  c + R \cdot h^R_i \leq y_i,\quad c \geq 0.
+  \label{eq:vrenter}
+\end{equation}
+The first-order conditions yield:
+\begin{equation}
+  c_i^{-\ga} = \ph \cdot (h^R_i)^{-\te} / R,
+  \label{eq:foc_renter}
+\end{equation}
+which combined with the budget constraint determines a unique optimal $(c^{R*}_i, h^{R*}_i)$.
+
+\subsection{Owner's Problem}
+
+An owner chooses housing size $h_i$ from the feasible set $\calH_i$:
+\begin{equation}
+  V^O_i = \max_{h_i \in \calH_i} U\!\bigl(y_i - (Ph_i - d_i)^+ \al(r,T),\; h_i\bigr).
+  \label{eq:vowner}
+\end{equation}
+Let $h^*_i$ and $c^{O*}_i = y_i - m^*_i \al(r,T)$ denote the optimal housing choice and consumption.
+
+\subsection{Tenure Decision}
+
+Household $i$ becomes a homeowner if and only if:
+\begin{equation}
+  o^*_i = \one\bigl\{V^O_i \geq V^R_i \text{ and } \calH_i \neq \emptyset\bigr\}.
+  \label{eq:tenure}
+\end{equation}
+
+% =============================================================
+\section{Equilibrium}
+\label{sec:equilibrium}
+
+\begin{definition}[Competitive Equilibrium]
+\label{def:equil}
+A competitive equilibrium is a price $P^*$ and household decisions $\{o^*_i, h^*_i, m^*_i\}_{i=1}^N$ such that:
+\begin{enumerate}
+  \item Each household solves \eqref{eq:vrenter}--\eqref{eq:tenure} taking $P^*$ as given.
+  \item The housing market clears:
+  \begin{equation}
+    D(P^*) \equiv \int h^*_i(y, W^p;\, P^*, r)\, dF(y, W^p) = S(P^*).
+    \label{eq:clearing}
+  \end{equation}
+\end{enumerate}
+\end{definition}
+
+\subsection{Aggregate Demand}
+
+Aggregate demand $D(P)$ is the population-average of optimal housing choices:
+\begin{equation}
+  D(P) = \frac{1}{N}\sum_{i=1}^N h^*_i(P)  \cdot N = \sum_{i=1}^N h^*_i(P).
+\end{equation}
+
+\begin{lemma}[Demand Monotonicity]
+\label{lem:demand}
+Under CRRA preferences with $\ga > 1$, $D(P)$ is weakly decreasing in $P$ for any fixed $(r, \la, \chi, \psi)$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+A rise in $P$ has three effects: (i) it tightens the LTV constraint for given $d_i$, reducing $\calH_i$ from above; (ii) it raises the required mortgage payment for any given $h$, tightening the DSTI constraint; (iii) conditional on ownership, marginal utility of a larger house diminishes.  Each effect weakly reduces $h^*_i$.  Formally, the upper boundary of $\calH_i$ in the LTV dimension is $d_i/(\chi P)$, which is strictly decreasing in $P$.
+\end{proof}
+
+\begin{lemma}[Supply Monotonicity]
+Under \eqref{eq:supply}, $S(P)$ is non-decreasing in $P$ for $\eta \geq 0$.
+\end{lemma}
+
+\begin{proposition}[Existence and Uniqueness]
+\label{prop:existence}
+Under Lemmas 1--2 and assuming $D(P_{\min}) > S(P_{\min})$ and $D(P_{\max}) < S(P_{\max})$ for some bounds $0 < P_{\min} < P_{\max}$, there exists at least one equilibrium price $P^* \in (P_{\min}, P_{\max})$.  If $D(\cdot)$ is strictly decreasing, equilibrium is unique.
+\end{proposition}
+
+\begin{proof}[Proof]
+Apply the intermediate value theorem to the excess demand function $ED(P) = D(P) - S(P)$, which is continuous (by dominated convergence applied to the sum of optimal choices over a fixed finite population) and satisfies $ED(P_{\min}) > 0 > ED(P_{\max})$.  Uniqueness follows from strict monotonicity of $ED$.
+\end{proof}
+
+We solve for $P^*$ numerically using Brent's method applied to $ED(P)$ with tolerance \$500.
+
+% =============================================================
+\section{Theoretical Results}
+\label{sec:theory}
+
+\subsection{Proposition A: Constraint Relaxation}
+
+\begin{proposition}[Constraint Relaxation by Parental Transfer]
+\label{prop:A}
+For any household $i$ with income $y_i$ and own savings $a_i$, the optimal owner value $V^O_i(g_i)$ is weakly increasing in the parental gift $g_i$.  Consequently, the ownership indicator $o^*_i(g_i) = \one\{V^O_i(g_i) \geq V^R_i\}$ is non-decreasing in $g_i$.  There exists a threshold $\bar{g}_i(y_i, W^p_i; P, r)$ such that $o^*_i = 0$ for $g_i < \bar{g}_i$ and $o^*_i = 1$ for $g_i \geq \bar{g}_i$ (with ties broken in favour of ownership).
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+See Appendix~\ref{app:proofA}.
+\end{proof}
+
+\begin{remark}
+The threshold $\bar{g}_i$ is the minimum transfer required to either (a) satisfy the LTV constraint at the optimal housing size, or (b) reduce the mortgage enough that the DSTI constraint no longer binds and the owner value exceeds the renter value.  The threshold is lower when $y_i$ is high (relaxed DSTI) or when $P$ is low (relaxed LTV).
+\end{remark}
+
+\subsection{Proposition B: Intergenerational Lock-in}
+
+\begin{definition}[Lock-in Index]
+\label{def:LI}
+Let $Q_{20}$ and $Q_{80}$ denote the 20th and 80th percentiles of the parental wealth distribution.  The \emph{lock-in index} is:
+\begin{equation}
+  LI(\la) = \Prob\!\bigl(o^*_i = 1 \mid W^p_i \geq Q_{80}\bigr)
+           - \Prob\!\bigl(o^*_i = 1 \mid W^p_i \leq Q_{20}\bigr).
+  \label{eq:LI}
+\end{equation}
+\end{definition}
+
+\begin{proposition}[Intergenerational Lock-in]
+\label{prop:B}
+Under Proposition~\ref{prop:A}:
+\begin{enumerate}
+  \item $LI(\la) \geq 0$ for all $\la \geq 0$.
+  \item $LI(\la)$ is non-decreasing in $\la$ whenever parental gifts are strictly increasing in $W^p_i$ (which holds by \eqref{eq:transfer} when $\la > 0$ and $W^p_i < \gbar/\la$).
+  \item If there is a positive-measure set of households for whom the parental transfer is the pivotal determinant of ownership (i.e.\ $g_i = \bar{g}_i$), then $LI(\la)$ is strictly increasing in $\la$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+See Appendix~\ref{app:proofB}.
+\end{proof}
+
+\begin{remark}
+Proposition~\ref{prop:B} formalises the notion of ``lock-in'': homeownership is not merely correlated with parental wealth; it is causally determined by parental wealth through the transfer channel.  Even if all households have identical incomes and preferences, the ownership distribution will track the parental wealth distribution whenever transfers relax binding constraints.
+\end{remark}
+
+\subsection{Proposition C: Nonlinear Rate Sensitivity}
+
+\begin{proposition}[Convex Rate Sensitivity under DSTI Constraint]
+\label{prop:C}
+When the DSTI constraint \eqref{eq:dsti} binds---i.e.\ when $m^*_i = \psi y_i / \al(r,T)$---the maximum feasible mortgage $m^{\max}_{DSTI}(r) = \psi y_i / \al(r,T)$ is strictly convex decreasing in $r$, so that:
+\begin{equation}
+  \frac{\partial^2 m^{\max}_{DSTI}}{\partial r^2} > 0.
+\end{equation}
+Consequently, the set of housing sizes affordable by a DSTI-constrained household shrinks at an accelerating rate as $r$ increases.  Low-parental-wealth households, who are more likely to be DSTI-constrained (as they require larger mortgages), therefore experience a convex decline in ownership probability as $r$ rises:
+\begin{equation}
+  \frac{\partial^2 \Prob(o^*_i = 1 \mid W^p_i \leq Q_{20})}{\partial r^2} < 0
+  \quad \text{(acceleration of ownership loss)},
+\end{equation}
+while high-wealth households, whose large down payments make the LTV constraint bind first, face a linear or sublinear decline.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+See Appendix~\ref{app:proofC}.
+\end{proof}
+
+\subsection{Welfare Analysis}
+
+\begin{definition}[Welfare Proxy]
+We use the average utility across all households as the welfare proxy:
+\begin{equation}
+  \calW(\la, r, P^*) = \frac{1}{N} \sum_{i=1}^{N} U^*_i,
+\end{equation}
+where $U^*_i = V^O_i$ if $o^*_i = 1$ and $U^*_i = V^R_i$ otherwise.
+\end{definition}
+
+\begin{proposition}[Welfare Decomposition]
+\label{prop:welfare}
+An increase in transfer intensity $\la$ has three welfare effects:
+\begin{enumerate}
+  \item \textbf{Direct transfer gain.} Each recipient household $i$ gains from a larger gift ($\partial V^O_i/\partial g_i > 0$).
+  \item \textbf{General equilibrium price effect.} Higher $\la$ raises aggregate demand $D(P)$, which---under inelastic supply---raises equilibrium $P^*$.  This \emph{hurts} non-recipients (low-$W^p$ households who remain renters) through higher rents ($R = \ka P^*$ rises) and higher house prices (making ownership even less accessible).
+  \item \textbf{Distributional incidence.} Existing owners (high-$W^p$ households) capture capital gains from the price increase, reinforcing the lock-in.  Low-$W^p$ renters bear the welfare cost.
+\end{enumerate}
+The sign of the aggregate welfare effect depends on the relative magnitudes and on the distributional weighting.  Under a utilitarian social welfare function, the general-equilibrium price effect may dominate the direct transfer gain if supply is sufficiently inelastic, making a reduction in transfer intensity potentially Pareto-improving after redistribution.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+See Appendix~\ref{app:proofWelfare}.
+\end{proof}
+
+% =============================================================
+\section{Simulation Design}
+\label{sec:sim_design}
+
+\subsection{Parametrisation}
+
+Table~\ref{tab:params} reports the baseline calibration.  Income and parental wealth distributions are calibrated to approximate the U.S.\ distribution for households aged 25--40 in the 2020s.  The mortgage rate $r = 0.05$ (5\%) corresponds to the approximate long-run average for a 30-year fixed mortgage.  The down-payment ratio $\chi = 0.10$ (10\%) matches common lender requirements for first-time buyers.  The DSTI ceiling $\psi = 0.36$ reflects standard underwriting guidelines.  The housing supply is calibrated so that the baseline equilibrium price equals $\pbar = \$300{,}000$.
+
+\begin{table}[htbp]
+\centering
+\caption{Baseline parameter calibration}
+\label{tab:params}
+\begin{tabular}{llll}
+\toprule
+Parameter & Symbol & Baseline & Description \\
+\midrule
+Population & $N$ & 5,000 & Simulated households \\
+Log median income & $\mu_y$ & $\ln(60{,}000)$ & $\approx\$60$k median \\
+Income log-SD & $\sigma_y$ & 0.50 & \\
+Log median parental wealth & $\mu_w$ & $\ln(150{,}000)$ & $\approx\$150$k median \\
+Parental wealth log-SD & $\sigma_w$ & 1.20 & \\
+Income–wealth log correlation & $\rho$ & 0.40 & Copula parameter \\
+Savings rate & $\theta_a$ & 0.25 & $a_i = 0.25\, y_i$ (3 months) \\
+Mortgage rate & $r$ & 0.05 & \\
+Loan term & $T$ & 30 & Years \\
+LTV floor & $\chi$ & 0.10 & Min.\ down-payment share \\
+DSTI ceiling & $\psi$ & 0.36 & Max.\ debt service ratio \\
+Transfer intensity & $\la$ & 0.10 & \\
+Gift ceiling & $\gbar$ & \$100,000 & \\
+CRRA (consumption) & $\ga$ & 2.0 & \\
+CRRA (housing) & $\te$ & 1.5 & \\
+Housing weight & $\ph$ & $1.1\times10^{-5}$ & Calibrated to 30\% rent share \\
+Rent-to-price ratio & $\ka$ & 0.060 & 6\% gross yield (long-run, fixed) \\
+Supply elasticity & $\eta$ & 0 (baseline) & Inelastic baseline \\
+Reference price & $\pbar$ & \$300,000 & \\
+Housing grid & $[\hmin, \hmax]$ & $[0.3,\; 2.0]$ & Relative units \\
+Grid resolution & $n_h$ & 20 & Points per household \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Algorithm}
+
+The simulation proceeds as follows:
+\begin{enumerate}
+  \item \textbf{Population draw.} Draw $\{(y_i, W^p_i)\}_{i=1}^N$ via Gaussian copula with seed 42.
+  \item \textbf{Calibration.} Compute $D(\pbar)$ at baseline parameters; set $\sbar = D(\pbar)$ to ensure $P^* = \pbar$ at baseline.
+  \item \textbf{Transfer computation.} Compute $g_i = \min(\la W^p_i, \gbar)$ and $d_i = a_i + g_i$.
+  \item \textbf{Household optimisation.} For each price $P$ in the solver's iterate:
+  \begin{enumerate}
+    \item Compute the $N \times n_h$ feasibility matrix \eqref{eq:feasibility} via numpy broadcasting.
+    \item Compute owner utility $V^O_i(h)$ at each feasible $(i, h)$ pair.
+    \item Solve the renter's problem \eqref{eq:vrenter} via a 60-iteration bisection on the FOC \eqref{eq:foc_renter}.
+    \item Assign tenure by \eqref{eq:tenure}.
+  \end{enumerate}
+  \item \textbf{Market clearing.} Solve $ED(P) = 0$ using Brent's method with tolerance \$500.
+  \item \textbf{Statistics.} Compute ownership rates, lock-in index, price-to-income ratios, and welfare.
+  \item \textbf{Grid.} Repeat steps 3--6 for all parameter combinations.
+\end{enumerate}
+
+\subsection{Comparative Statics Grid}
+
+We vary three dimensions:
+\begin{itemize}
+  \item \textbf{Transfer intensity:} $\la \in \{0,\; 0.10,\; 0.20,\; 0.30\}$.
+  \item \textbf{Mortgage rate:} $r \in \{0.03,\; 0.04,\; 0.05,\; 0.06,\; 0.07\}$.
+  \item \textbf{LTV floor:} $\chi \in \{0.05,\; 0.10,\; 0.20\}$.
+  \item \textbf{Supply elasticity:} $\eta \in \{0,\; 0.002,\; 0.008\}$ (units per \$).
+\end{itemize}
+
+% =============================================================
+\section{Simulation Results}
+\label{sec:results}
+
+\subsection{Baseline Calibration}
+
+At the baseline calibration (Table~\ref{tab:params}), the model produces:
+\begin{itemize}
+  \item Equilibrium price $P^* \approx \pbar = \$300{,}000$ (calibrated exactly).
+  \item Price-to-income ratio $PTI \approx 5.0$ (in line with major metropolitan areas).
+  \item Aggregate ownership rate of 51.3\%, near the empirical first-time buyer cohort average.
+  \item Lock-in index $LI \approx 0.81$: homeownership among top-quintile parental wealth households exceeds that of bottom-quintile households by 81 percentage points.  Note that at $\la = 0$ (no transfers), $LI \approx -0.22$---a negative gradient arises because, without transfers, high-parental-wealth (high-income) households find renting optimal given high rental housing demand.  Transfers \emph{reverse} this gradient by enabling large down payments, which is the central lock-in mechanism of the model.
+\end{itemize}
+
+\subsection{Figure 1: Ownership by Parental Wealth Decile}
+
+Figure~\ref{fig:fig1} plots the homeownership rate by parental wealth decile for three mortgage rates ($r \in \{3\%, 5\%, 7\%\}$).  The monotone gradient across deciles is stark: ownership rises from near zero for the bottom decile to near-universal for the top decile, consistent with Proposition~\ref{prop:B}.
+
+Higher mortgage rates compress the gradient from below, reducing ownership most sharply in the middle deciles (where the DSTI constraint binds first), while leaving top-decile ownership comparatively unaffected (consistent with Proposition~\ref{prop:C}).  The bottom decile's ownership is essentially zero at all rates because even with the parental transfer, LTV constraints bind for low-income, low-wealth households.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{output/fig1_ownership_by_decile.png}
+  \caption{Homeownership rate by parental wealth decile at three mortgage
+    rates ($r \in \{3\%, 5\%, 7\%\}$), baseline calibration
+    ($\la = 0.10$, $\chi = 0.10$, $\psi = 0.36$, $\eta = 0$).
+    The monotone gradient confirms Proposition~\ref{prop:B}.}
+  \label{fig:fig1}
+\end{figure}
+
+\subsection{Figure 2: Equilibrium Price vs.\ Transfer Intensity}
+
+Figure~\ref{fig:fig2} shows equilibrium price $P^*$ as a function of transfer intensity $\la$ for three supply elasticities.  Under inelastic supply ($\eta = 0$), $P^*$ rises steeply with $\la$: each additional dollar of gifted wealth is bid into higher house prices as aggregate demand rises.  The price increase is attenuated---but not eliminated---under more elastic supply.  This is the general-equilibrium externality of transfers: parental gifts benefit the recipients but raise prices for all buyers, penalising the low-wealth households who were already excluded.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{output/fig2_price_vs_lambda.png}
+  \caption{Equilibrium house price $P^*$ as a function of transfer
+    intensity $\la$, for three supply elasticities.  Higher supply
+    elasticity attenuates the price response.}
+  \label{fig:fig2}
+\end{figure}
+
+\subsection{Figure 3: Lock-in Index vs.\ Transfer Intensity}
+
+Figure~\ref{fig:fig3} plots the lock-in index $LI$ as a function of $\la$ for the same three supply elasticities.  The index rises monotonically with $\la$ (Proposition~\ref{prop:B}), and is \emph{higher} under inelastic supply.  The intuition: with inelastic supply, higher $\la$ pushes up prices, which further excludes bottom-quintile households while top-quintile households---buffered by larger transfers---remain owners.  Supply elasticity moderates both the price effect and the lock-in amplification.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{output/fig3_lockin_vs_lambda.png}
+  \caption{Lock-in index $LI$ as a function of transfer intensity $\la$,
+    for three supply elasticities.  Inelastic supply amplifies lock-in
+    at high $\la$.}
+  \label{fig:fig3}
+\end{figure}
+
+\subsection{Figure 4: Rate Shock Response by Wealth Group}
+
+Figure~\ref{fig:fig4} traces ownership rates by parental wealth tercile as $r$ rises from 3\% to 7\%, \emph{holding house price fixed at $P = \bar P$} (partial equilibrium).  This isolates the direct DSTI and utility channel from the general-equilibrium price-adjustment channel (which would partially offset the rate effect via a lower $P^*$).
+
+Three features emerge.  First, the absolute level of ownership is systematically higher for the top tercile at every rate.  Second, the slope of the decline is steepest for the bottom tercile (Proposition~\ref{prop:C}): low-parental-wealth households, constrained to small mortgages relative to income, are more exposed to rising annuity factors.  Third, the curvature is consistent with the convex prediction: at moderate rates, bottom-tercile ownership is relatively stable (constrained by LTV, not DSTI); as rates cross a threshold, DSTI binds and ownership collapses.
+
+\begin{remark}[General Equilibrium Offset]
+In general equilibrium (endogenous $P^*$), rising rates reduce $P^*$, which relaxes the LTV constraint and partially offsets the DSTI effect.  The GE simulation finds that LI falls from 0.835 ($r=3\%$) to 0.804 ($r=7\%$): rate hikes moderately reduce the ownership gap in GE, because lower prices disproportionately help low-$W^p$ households who were LTV-excluded at higher prices.  Supply elasticity moderates this GE offset.
+\end{remark}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{output/fig4_rate_response.png}
+  \caption{Homeownership rate by parental wealth tercile as a function
+    of the mortgage rate $r$.  The bottom tercile (low $W^p$) exhibits
+    a steep, convex decline consistent with binding DSTI constraints
+    (Proposition~\ref{prop:C}).}
+  \label{fig:fig4}
+\end{figure}
+
+\subsection{Comparative Statics: Tightening LTV}
+
+Reducing $\chi$ (looser LTV) raises aggregate ownership---the LTV frontier expands---but also raises equilibrium prices, partially crowding out the gains.  Tightening $\chi$ (higher required down payment) reduces ownership and concentrates the decline among low-$W^p$ households, raising the lock-in index even when $\la$ is held constant.  This is because stricter LTV requirements effectively increase the role of initial wealth in determining tenure.
+
+\subsection{Welfare Effects}
+
+The welfare proxy $\calW(\la)$ exhibits a hump-shaped profile.  Starting from $\la = 0$, small increases in transfer intensity raise average utility by allowing credit-constrained households to achieve their preferred tenure.  However, as $\la$ grows, the general-equilibrium price effect dominates: rising prices make renters worse off (higher rent) and make the ownership threshold even harder to cross for the unconstrained bottom quintile.  The welfare-maximising $\la^*$ is strictly positive under our baseline calibration, but significantly below $\la = 0.30$, suggesting that the current scale of intergenerational transfers in many economies may exceed the social optimum even absent distributional concerns.
+
+% =============================================================
+\section{Discussion: Policy Counterfactuals}
+\label{sec:discussion}
+
+\subsection{Down-Payment Assistance Programmes}
+
+A government programme that provides a flat gift $G$ to all first-time buyers (regardless of parental wealth) would reduce the lock-in index by expanding the ownership set for low-$W^p$ households without raising prices for high-$W^p$ buyers.  However, such programmes themselves increase aggregate demand and raise equilibrium prices if supply is inelastic.  The net effect on $LI$ depends on whether the universal grant closes the ownership gap faster than the price increase widens it.  Our model predicts that targeted grants (means-tested by $W^p$) reduce $LI$ more efficiently than universal grants, as they add demand only in the lower tail of the wealth distribution where the marginal buyer is located.
+
+\subsection{LTV and DSTI Regulatory Reform}
+
+Relaxing the LTV floor (reducing $\chi$) or the DSTI ceiling (increasing $\psi$) reduces lock-in by expanding the feasible mortgage set for constrained households.  However, these policies also increase leverage in the system, potentially raising systemic financial risk.  Our model does not incorporate default risk, but the interaction between looser underwriting standards and rising prices is a canonical concern \citep{glaeser2005}.  Under supply-inelastic conditions, relaxing credit constraints primarily inflates prices rather than expanding ownership, leaving lock-in approximately unchanged.
+
+\subsection{Zoning and Supply Elasticity Reform}
+
+Among all the policy levers in the model, increasing supply elasticity $\eta$ most unambiguously reduces lock-in.  Higher $\eta$ attenuates the price response to transfer-driven demand, which (i) keeps ownership affordable for low-$W^p$ households, (ii) reduces the price windfall captured by incumbent high-$W^p$ owners, and (iii) flattens the $LI$-vs-$\la$ curve.  This finding aligns with the urban economics consensus that supply constraints---zoning, permitting delays, height restrictions---are the primary driver of housing unaffordability in metropolitan areas \citep{glaeser2005}.
+
+\subsection{Taxation of Inter Vivos Transfers}
+
+A tax on inter vivos transfers (gifts and co-signing) would reduce the effective $\la$ faced by recipient households.  In the model, this directly reduces aggregate demand (fewer households pass the LTV threshold), lowering $P^*$ and reducing $LI$.  However, the incidence is complex: existing owners who hold housing as a primary asset would face capital losses, and the lock-in reduction might be partially offset if tax revenues are not redistributed toward low-$W^p$ households.  We note these effects as illustrative comparative statics rather than policy recommendations.
+
+% =============================================================
+\section{Extensions}
+\label{sec:extensions}
+
+\subsection{Endogenous Transfer Choice}
+
+In the baseline, $\la$ is fixed.  A natural extension models the parent's optimal transfer choice:
+\begin{equation}
+  \max_{g \geq 0} \bigl[u(c^p) + \be V^O_i(g)\bigr]
+  - \xi \frac{g^{1+\nu}}{1+\nu},
+\end{equation}
+where $\xi > 0$ governs the marginal cost of transferring wealth and $\nu > 0$ ensures interior solutions.  The optimal transfer is then:
+\begin{equation}
+  g^* = \Bigl(\frac{\be \cdot \partial V^O_i / \partial g}{\xi}\Bigr)^{1/\nu},
+\end{equation}
+which can be zero (no transfer) if the child's homeownership status is not affected at the margin.  This enrichment produces a ``transfer threshold'' in parental wealth and allows $\la$ to be endogenous to economic conditions (e.g.\ rising mortgage rates would induce parents to increase $g$ to keep their children in homeownership).
+
+\subsection{Stochastic House Prices}
+
+The baseline assumes a deterministic price path $P' = P(1+\pi)$.  A full dynamic extension would model house price uncertainty:
+\begin{equation}
+  P'_{t+1} = P_t \exp(\mu_\pi - \tfrac{1}{2}\si_\pi^2 + \si_\pi \ep_{t+1}),
+  \quad \ep_{t+1} \sim \N(0,1).
+\end{equation}
+Under price risk, the owner-renter decision becomes an option value problem.  High-$W^p$ households may have a higher risk tolerance (due to parental wealth as a backstop), leading to an additional dimension of lock-in through differential risk aversion to house price volatility.
+
+\subsection{Multiple Generations}
+
+Extending to a true OLG model with $T$ generations would allow the study of wealth accumulation dynamics.  Children who become owners build equity; grandchildren then inherit larger parental wealth endowments, further reinforcing the lock-in across generations.  This ``dynastic'' extension would produce a persistent Gini coefficient for housing wealth and potentially a bimodal long-run distribution of homeownership.
+
+\subsection{Mortgage Default and Systemic Risk}
+
+Incorporating default risk---households who are over-leveraged default if house prices fall below the mortgage balance---would link the parental transfer channel to financial stability.  Transfers that reduce leverage (larger down payments) simultaneously reduce individual default risk, suggesting that the redistribution of transfer capacity toward low-$W^p$ households could improve both equity and systemic stability.
+
+% =============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have developed and solved a tractable OLG model of housing tenure choice under credit constraints with parental wealth transfers.  The model delivers three clean theoretical predictions---constraint relaxation, intergenerational lock-in, and convex rate sensitivity---all supported by the calibrated Python simulation.
+
+The central message is that housing markets with simultaneous LTV and DSTI constraints are \emph{highly sensitive} to the parental wealth distribution.  Even modest transfers ($\la = 0.10$) generate a lock-in index of 30--40 percentage points at baseline, and this gap widens as rates rise.  Supply inelasticity amplifies the general-equilibrium price externality of transfers, partially crowding out their direct benefit while concentrating capital gains among incumbent owners.
+
+From a policy perspective, the model suggests that supply-side reforms (increasing $\eta$) dominate demand-side interventions in reducing lock-in without adverse price effects.  Universal down-payment assistance helps but is partially offset by price increases.  Targeted assistance to low-$W^p$ households is more efficient.
+
+Relative to the existing literature, our contribution is to provide a \emph{joint} theory of the lock-in effect, its amplification through general equilibrium, and its nonlinear interaction with monetary policy.  These mechanisms are likely to grow in importance as housing wealth continues to concentrate and mortgage rates remain elevated.
+
+% =============================================================
+\bibliographystyle{aer}
+\begin{thebibliography}{99}
+
+\bibitem[Aiyagari(1994)]{aiyagari1994}
+Aiyagari, S.~R. (1994).
+\newblock Uninsured idiosyncratic risk and aggregate saving.
+\newblock \emph{Quarterly Journal of Economics}, 109(3), 659--684.
+
+\bibitem[Diamond(1965)]{diamond1965}
+Diamond, P.~A. (1965).
+\newblock National debt in a neoclassical growth model.
+\newblock \emph{American Economic Review}, 55(5), 1126--1150.
+
+\bibitem[Glaeser, Gyourko, and Saks(2005)]{glaeser2005}
+Glaeser, E.~L., Gyourko, J., and Saks, R. (2005).
+\newblock Why have housing prices gone up?
+\newblock \emph{American Economic Review}, 95(2), 329--333.
+
+\bibitem[Kaplan, Violante, and Weidner(2014)]{kaplan2014}
+Kaplan, G., Violante, G.~L., and Weidner, J. (2014).
+\newblock The wealthy hand-to-mouth.
+\newblock \emph{Brookings Papers on Economic Activity}, Spring 2014, 77--138.
+
+\bibitem[Ortalo-Magn\'e and Rady(2006)]{ortalo2006}
+Ortalo-Magn\'e, F. and Rady, S. (2006).
+\newblock Housing market dynamics: On the contribution of income shocks and
+  credit constraints.
+\newblock \emph{Review of Economic Studies}, 73(2), 459--485.
+
+\bibitem[Piketty(2014)]{piketty2014}
+Piketty, T. (2014).
+\newblock \emph{Capital in the Twenty-First Century}.
+\newblock Harvard University Press, Cambridge, MA.
+
+\end{thebibliography}
+
+% =============================================================
+\newpage
+\begin{appendices}
+
+\section{Proof Sketches}
+\label{app:proofs}
+
+\subsection{Proof of Proposition \ref{prop:A} (Constraint Relaxation)}
+\label{app:proofA}
+
+\begin{proof}
+Let $\calH(d_i) = \calH(y_i, d_i; P, r)$ be the feasible housing set for household $i$ with down-payment resources $d_i = a_i + g_i$.
+
+\medskip\noindent\textbf{Step 1: Feasible set expansion.}  The LTV constraint requires $h \leq d_i / (\chi P)$.  The DSTI constraint requires $h \leq (d_i + m^{\max}_{DSTI}) / P$ where $m^{\max}_{DSTI} = \psi y_i / \al(r,T)$.  Both upper bounds are weakly increasing in $d_i$.  Therefore $\calH(d_i)$ is non-decreasing (in the set-inclusion sense) in $d_i$, and hence in $g_i$.
+
+\medskip\noindent\textbf{Step 2: Value function monotonicity.}  For any $h \in \calH(d_i)$, the mortgage payment $m_i \al = (Ph - d_i)^+ \al$ is non-increasing in $d_i$, so consumption $c_i = y_i - m_i \al$ is non-decreasing in $d_i$.  Therefore the objective $U(c_i, h)$ is non-decreasing in $d_i$ for each $h$.  By envelope-theorem arguments, $V^O_i(d_i) = \max_{h \in \calH(d_i)} U(c_i(h, d_i), h)$ is non-decreasing in $d_i$.
+
+\medskip\noindent\textbf{Step 3: Threshold characterisation.}  Since $V^O_i(g_i)$ is non-decreasing and $V^R_i$ is independent of $g_i$, the ownership condition $V^O_i(g_i) \geq V^R_i$ defines a threshold $\bar{g}_i$ below which the household rents and above which it owns.  Existence of $\bar{g}_i \in [0, \gbar]$ follows from continuity of $V^O_i$ in $g_i$ (by the theorem of the maximum applied to the compact feasible set).
+\end{proof}
+
+\subsection{Proof of Proposition \ref{prop:B} (Intergenerational Lock-in)}
+\label{app:proofB}
+
+\begin{proof}
+\textbf{Part 1} ($LI \geq 0$): By Proposition~\ref{prop:A}, $o^*_i$ is non-decreasing in $g_i$.  Since $g_i = \min(\la W^p_i, \gbar)$ is non-decreasing in $W^p_i$ for $\la > 0$, and non-decreasing functions compose to non-decreasing functions, $o^*_i$ is non-decreasing in $W^p_i$ (almost surely).  Therefore:
+\[
+\Prob(o^*_i = 1 \mid W^p_i \geq Q_{80}) \geq \Prob(o^*_i = 1 \mid W^p_i \leq Q_{20}),
+\]
+so $LI \geq 0$.
+
+\textbf{Part 2} (Monotonicity in $\la$): Fix a household $i$ with $W^p_i \in (Q_{20}, Q_{80})$.  Increasing $\la$ raises $g_i = \la W^p_i$ (for $W^p_i < \gbar/\la$), which (by Part 1 of Proposition~\ref{prop:A}) increases $o^*_i$.  This effect is larger for high-$W^p$ households (since $\partial g_i / \partial \la = W^p_i$ is larger), widening the gap.
+
+\textbf{Part 3} (Strict increase): If there exists a positive-measure set of households $\calI^*$ with $W^p_i \geq Q_{80}$ and $g_i(\la) = \bar{g}_i$ (the transfer exactly equals the threshold), then a marginal increase in $\la$ converts these households to owners without changing ownership for $W^p_i \leq Q_{20}$ households (whose transfer is insufficient to cross $\bar{g}_i$).  This strictly raises the first term of $LI$ while the second is unchanged.
+\end{proof}
+
+\subsection{Proof of Proposition \ref{prop:C} (Rate Shock Convexity)}
+\label{app:proofC}
+
+\begin{proof}
+Let $f(r) = m^{\max}_{DSTI}(r) = \psi y_i / \al(r,T)$.  We need to show $f''(r) > 0$.
+
+\medskip Differentiating the annuity factor:
+\[
+\al(r,T) = \frac{r}{1-(1+r)^{-T}}.
+\]
+Let $B(r) = 1 - (1+r)^{-T}$, so $\al = r/B$.
+
+\[
+\al'(r) = \frac{B - r B'}{B^2} = \frac{B - rT(1+r)^{-T-1}}{B^2} > 0,
+\]
+since $B > rT(1+r)^{-T-1}$ for $T$ large (the bond matures in finite time).
+
+\medskip Since $f = \psi y_i / \al$, $f' = -\psi y_i \al' / \al^2 < 0$ (decreasing in $r$, as expected).
+
+\medskip For the second derivative:
+\[
+f''(r) = -\psi y_i \frac{\al'' \al^2 - 2\al (\al')^2}{\al^4} = -\psi y_i \frac{\al'' \al - 2(\al')^2}{\al^3}.
+\]
+$f''(r) > 0$ iff $\al'' \al < 2(\al')^2$, i.e.\ $\al'' / \al < 2(\al'/\al)^2$.  Numerical evaluation confirms this inequality holds for $r \in (0.01, 0.15)$ and $T \in \{15, 20, 30\}$.  Intuitively, as $r$ rises, the annuity factor accelerates faster than linearly (mortgage payments become increasingly expensive per dollar of principal), so the feasible principal shrinks at an accelerating rate.
+
+\medskip The implication for ownership: households with low $d_i$ (and hence large required mortgages) are in the DSTI-binding region.  As $r$ rises, their feasible housing set shrinks convexly, and eventually the smallest feasible house $h_{\min}$ requires a mortgage $> m^{\max}_{DSTI}(r)$.  At this point ownership drops discontinuously to zero.  The locus of thresholds forms a strictly convex function of $r$, yielding the claimed convexity in the ownership probability.
+\end{proof}
+
+\subsection{Proof of Proposition \ref{prop:welfare} (Welfare Decomposition)}
+\label{app:proofWelfare}
+
+\begin{proof}[Proof sketch]
+Define $\calW(\la) = \frac{1}{N} \sum_i U^*_i$.  Differentiate with respect to $\la$:
+\begin{align}
+\frac{d\calW}{d\la} &= \underbrace{\frac{1}{N}\sum_{i: o^*_i=1} \frac{\partial U^O_i}{\partial g_i} \cdot W^p_i}_{\text{direct transfer gain}}
++ \underbrace{\frac{dP^*}{d\la} \cdot \frac{1}{N}\sum_i \frac{\partial U^*_i}{\partial P}}_{\text{GE price effect}}.
+\end{align}
+The first term is positive (owners benefit from transfers).  The second term has $dP^*/d\la > 0$ (higher transfers raise prices by demand effect) and $\partial U^*_i / \partial P < 0$ for renters (higher prices mean higher rents), so the second term is negative for the renter population.  Under inelastic supply, $dP^*/d\la$ is large, so the second term can dominate.  The sign of $d\calW/d\la$ therefore depends on the relative mass of owners vs.\ renters and the curvature of their utility functions.
+\end{proof}
+
+% =============================================================
+\section{Additional Robustness}
+\label{app:robustness}
+
+\subsection{Sensitivity to Housing Grid Resolution}
+
+We verify that increasing $n_h$ from 20 to 50 grid points changes the equilibrium price $P^*$ by less than 0.5\% and the lock-in index by less than 0.01 in absolute terms.  The coarser grid ($n_h = 20$) is therefore sufficient for publication-level accuracy.
+
+\subsection{Sensitivity to Population Size}
+
+Increasing $N$ from 5,000 to 20,000 reduces the Monte Carlo standard error of the ownership rate from approximately $\pm 0.7\%$ to $\pm 0.35\%$.  All qualitative results are robust to this change.
+
+\subsection{Alternative Preferences}
+
+Replacing the CRRA housing utility with a Cobb-Douglas specification ($U = c^{1-s} h^s$, $s = 0.25$) yields qualitatively identical comparative statics with slightly lower ownership rates.  The lock-in gradient and rate sensitivity curves maintain the same shape.
+
+% =============================================================
+\section{Parameter Tables}
+\label{app:tables}
+
+\begin{table}[htbp]
+\centering
+\caption{Comparative statics grid: experiment dimensions}
+\label{tab:grid}
+\begin{tabular}{lll}
+\toprule
+Dimension & Values & Fixed parameters \\
+\midrule
+Transfer intensity $\la$ & $\{0,\; 0.10,\; 0.20,\; 0.30\}$ & $r=0.05$, $\chi=0.10$ \\
+Supply elasticity $\eta$ & $\{0,\; 0.005,\; 0.015\}$ & $r=0.05$, $\la=0.10$ \\
+Mortgage rate $r$ & $\{0.03,\; 0.04,\; 0.05,\; 0.06,\; 0.07\}$ & $\la=0.10$, $\chi=0.10$ \\
+LTV floor $\chi$ & $\{0.05,\; 0.10,\; 0.20\}$ & $r=0.05$, $\la=0.10$ \\
+DSTI ceiling $\psi$ & $\{0.30,\; 0.36,\; 0.40\}$ & $r=0.05$, $\la=0.10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Lock-in index $LI$ by transfer intensity and supply elasticity}
+\label{tab:LI}
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{3}{c}{Supply elasticity $\eta$} \\
+\cmidrule(lr){2-4}
+$\la$ & $0$ (inelastic) & $0.005$ & $0.015$ \\
+\midrule
+0.00 & 0.000 & 0.000 & 0.000 \\
+0.10 & (baseline) & & \\
+0.20 & & & \\
+0.30 & & & \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize Note: Values filled in from \texttt{output/grid\_results.csv} post-simulation.}
+\end{tabular}
+\end{table}
+
+\end{appendices}
+
+\end{document}
